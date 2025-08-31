@@ -319,25 +319,29 @@ async function countReadyConfessionsDPU_Supabase() {
 
 
 /**
- * Test function to get Instagram account's current rate limit usage for Ferguson College.
+ * Test function to get Instagram account's current rate limit usage for DPU.
  */
-function testInstagramContentPublishingLimitDPU_Supabase() {
-  const limitUrl = `https://graph.facebook.com/v19.0/${DPU_INSTAGRAM_BUSINESS_ACCOUNT_ID}/content_publishing_limit?access_token=${DPU_INSTAGRAM_ACCESS_TOKEN}`;
-  const limitRes = UrlFetchApp.fetch(limitUrl, { muteHttpExceptions: true });
-  const limitJson = JSON.parse(limitRes.getContentText());
-  console.log('Content publishing limit response: ' + JSON.stringify(limitJson));
-  
-  if (
-    !limitJson ||
-    !limitJson.data ||
-    !limitJson.data[0] ||
-    typeof limitJson.data[0].quota_usage !== 'number'
-  ) {
-    console.log('Could not retrieve content publishing limit.');
-    return;
+async function testInstagramContentPublishingLimitDPU_Supabase() {
+  const limitUrl = `https://graph.facebook.com/v19.0/${INSTAGRAM_BUSINESS_ACCOUNT_ID}/content_publishing_limit?access_token=${INSTAGRAM_ACCESS_TOKEN}`;
+  try {
+    const limitRes = await axios.get(limitUrl);
+    const limitJson = safeJsonParse(JSON.stringify(limitRes.data), null);
+    console.log('Content publishing limit response: ' + JSON.stringify(limitJson));
+    
+    if (
+      !limitJson ||
+      !limitJson.data ||
+      !limitJson.data[0] ||
+      typeof limitJson.data[0].quota_usage !== 'number'
+    ) {
+      console.log('Could not retrieve content publishing limit.');
+      return;
+    }
+    const quota = (typeof limitJson.data[0].quota === 'number') ? limitJson.data[0].quota : 100;
+    console.log(`Quota usage: ${limitJson.data[0].quota_usage} / ${quota}`);
+  } catch (e) {
+    console.log('Error in test function:', e);
   }
-  var quota = (typeof limitJson.data[0].quota === 'number') ? limitJson.data[0].quota : 100;
-  console.log(`Quota usage: ${limitJson.data[0].quota_usage} / ${quota}`);
 }
 
 // Export functions for use in other files
