@@ -20,7 +20,7 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run DPU script
+      - name: Run script
         run: node index.js
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
