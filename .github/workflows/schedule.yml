@@ -1,6 +1,6 @@
 name: Run Confession Scripts Hourly
 
-on:
+on: 
   schedule:
     - cron: '0 * * * *'  # Every hour at minute 0
   workflow_dispatch:  # Manual trigger for testing
@@ -21,7 +21,7 @@ jobs:
         run: npm install
 
       - name: Run DPU script
-        run: node DPU.js
+        run: node index.js
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
@@ -30,15 +30,7 @@ jobs:
           TABLE_NAME: ${{ secrets.TABLE_NAME }}
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
-
-      - name: Run FC script
-        run: node FC.js
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           INSTAGRAM_ACCESS_TOKEN_FC: ${{ secrets.INSTAGRAM_ACCESS_TOKEN_FC }}
           INSTAGRAM_BUSINESS_ACCOUNT_ID_FC: ${{ secrets.INSTAGRAM_BUSINESS_ACCOUNT_ID_FC }}
           TABLE_NAME_FC: ${{ secrets.TABLE_NAME_FC }}
-          EMAIL_USER: ${{ secrets.EMAIL_USER }}
-          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
 
