@@ -2,7 +2,7 @@ name: Run Confession Scripts Hourly
 
 on: 
   schedule:
-    - cron: '0 * * * *'  # Every hour at minute 0
+    - cron: '30 * * * *'  # Every hour at minute 30 UTC → aligns with :00 IST
   workflow_dispatch:  # Manual trigger for testing
 
 jobs:
