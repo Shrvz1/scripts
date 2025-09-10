@@ -1,7 +1,7 @@
 name: Run Confession Scripts Hourly
 on:
   schedule:
-    - cron: '30 3-19 * * *'  # Every hour at :30 UTC → 9:00 AM to 1:00 AM IST
+    - cron: '30 3-18 * * *'  # Every hour at :30 UTC → 9:00 AM to 12:00 AM IST
   workflow_dispatch:
 jobs:
   run-scripts:
