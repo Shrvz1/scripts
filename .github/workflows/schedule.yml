@@ -1,28 +1,24 @@
 name: Run Confession Scripts Hourly
-
 on:
   schedule:
     - cron: '30 3-19 * * *'  # Every hour at :30 UTC → 9:00 AM to 1:00 AM IST
   workflow_dispatch:
-
 jobs:
   run-scripts:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-
       - name: Install dependencies
         run: npm install
-
       - name: Run script
         run: node index.js
         env:
+          TZ: Asia/Kolkata
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
@@ -33,4 +29,3 @@ jobs:
           INSTAGRAM_ACCESS_TOKEN_FC: ${{ secrets.INSTAGRAM_ACCESS_TOKEN_FC }}
           INSTAGRAM_BUSINESS_ACCOUNT_ID_FC: ${{ secrets.INSTAGRAM_BUSINESS_ACCOUNT_ID_FC }}
           TABLE_NAME_FC: ${{ secrets.TABLE_NAME_FC }}
-
