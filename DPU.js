@@ -166,14 +166,10 @@ async function postImagesToInstagramDPU_Supabase() {
     }
   }
 
-  // Sort by priority (post_number) - smaller numbers first
-  eligibleConfessions.sort((a, b) => {
-    const priorityA = typeof a.priority === 'number' ? a.priority : parseInt(a.priority) || 999999;
-    const priorityB = typeof b.priority === 'number' ? b.priority : parseInt(b.priority) || 999999;
-    return priorityA - priorityB;
-  });
+  // Sort by sr_no ascending (oldest first)
+  eligibleConfessions.sort((a, b) => a.confession.sr_no - b.confession.sr_no);
 
-  console.log(`Found ${eligibleConfessions.length} eligible confessions, sorted by post_number priority`);
+  console.log(`Found ${eligibleConfessions.length} eligible confessions, sorted by sr_no ascending`);
 
   for (let j = 0; j < eligibleConfessions.length; j++) {
     if (postsSucceeded >= maxPosts) {
@@ -186,7 +182,7 @@ async function postImagesToInstagramDPU_Supabase() {
     const imageUrl = confession.imagekit_url;
     const caption = '#confession #confessions #confessionpage #confessionaccount #confessionpost #confessiontime #secretlove #secret #unrequitedlove #iloveyou #collegeromance #collegelife #collegeconfessions #collegecrush #campuslove #heartbreak #heartbroken #brokenheart #breakup #movingon #dypit #dypatil #dypatilcampus #dypatilpimpri #dypatilcollege #dypatilakurdi #dpupune #dpu #dypatiluniversity #dypatilmedicalcollege';
 
-    console.log(`Attempting to post sr_no ${confession.sr_no} (priority: ${eligibleConfession.priority}): Image URL = ${imageUrl}`);
+    console.log(`Attempting to post sr_no ${confession.sr_no}: Image URL = ${imageUrl}`);
 
     // Step 1: Create media object
   const createMediaUrl = `https://graph.facebook.com/v19.0/${INSTAGRAM_BUSINESS_ACCOUNT_ID}/media`;
