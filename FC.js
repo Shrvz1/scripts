@@ -35,19 +35,37 @@ function safeJsonParse(text, defaultValue) {
  */
 async function fetchConfessionsFromSupabase(tableName) {
   try {
-    const url = `${SUPABASE_URL}/rest/v1/${tableName}?select=sr_no,confession,timestamp,post_number,accept,reject,imagekit_url,is_posted&order=sr_no.asc`;
-    const response = await axios.get(url, {
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json'
+    const allConfessions = [];
+    let offset = 0;
+    const limit = 1000; // Supabase default limit
+
+    while (true) {
+      const url = `${SUPABASE_URL}/rest/v1/${tableName}?select=sr_no,confession,timestamp,post_number,accept,reject,imagekit_url,is_posted&order=sr_no.asc&limit=${limit}&offset=${offset}`;
+      const response = await axios.get(url, {
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.status !== 200) {
+        console.log(`Error fetching from Supabase: ${response.status} - ${response.data}`);
+        return [];
       }
-    });
-    if (response.status !== 200) {
-      console.log(`Error fetching from Supabase: ${response.status} - ${response.data}`);
-      return [];
+      
+      const batch = response.data;
+      allConfessions.push(...batch);
+      
+      // If we got less than the limit, we've reached the end
+      if (batch.length < limit) {
+        break;
+      }
+      
+      offset += limit;
     }
-    return response.data;
+    
+    return allConfessions;
   } catch (e) {
     console.log(`Error in fetchConfessionsFromSupabase: ${e}`);
     return [];
@@ -165,10 +183,14 @@ async function postImagesToInstagramFC_Supabase() {
     }
   }
 
-  // Sort by sr_no ascending (oldest first)
-  eligibleConfessions.sort((a, b) => a.confession.sr_no - b.confession.sr_no);
+  // Sort by priority (post_number) - smaller numbers first
+  eligibleConfessions.sort((a, b) => {
+    const priorityA = typeof a.priority === 'number' ? a.priority : parseInt(a.priority) || 999999;
+    const priorityB = typeof b.priority === 'number' ? b.priority : parseInt(b.priority) || 999999;
+    return priorityA - priorityB;
+  });
 
-  console.log(`Found ${eligibleConfessions.length} eligible confessions, sorted by sr_no ascending`);
+  console.log(`Found ${eligibleConfessions.length} eligible confessions, sorted by post_number priority`);
 
   for (let j = 0; j < eligibleConfessions.length; j++) {
     if (postsSucceeded >= maxPosts) {
@@ -181,7 +203,7 @@ async function postImagesToInstagramFC_Supabase() {
     const imageUrl = confession.imagekit_url;
     const caption = '#confession #confessions #confessionpage #confessionaccount #confessionpost #confessiontime #secretlove #secret #unrequitedlove #iloveyou #collegeromance #collegelife #collegeconfessions #collegecrush #campuslove #heartbreak #heartbroken #brokenheart #breakup #movingon #ferguson #fergussoncollege #fergussonians #fergussoncollegepune #heart #love';
 
-    console.log(`Attempting to post sr_no ${confession.sr_no}: Image URL = ${imageUrl}`);
+    console.log(`Attempting to post sr_no ${confession.sr_no} (priority: ${eligibleConfession.priority}): Image URL = ${imageUrl}`);
 
     // Step 1: Create media object
   const createMediaUrl = `https://graph.facebook.com/v19.0/${INSTAGRAM_BUSINESS_ACCOUNT_ID}/media`;
@@ -288,22 +310,40 @@ async function postImagesToInstagramFC_Supabase() {
  * Count confessions ready to be posted for Ferguson College (accept=✓, is_posted!=✓, has imagekit_url)
  */
 async function countReadyConfessionsFC_Supabase() {
-  const confessions = await fetchConfessionsFromSupabase(TABLE_NAME);
-  let readyCount = 0;
-  
-  for (let i = 0; i < confessions.length; i++) {
-    const confession = confessions[i];
-    if (confession.accept === '✓' && 
-        confession.is_posted !== '✓' && 
-        confession.imagekit_url && 
-        confession.imagekit_url.trim() !== '') {
-      readyCount++;
-      const priority = confession.post_number || 999999;
-      console.log(`Ready: sr_no ${confession.sr_no}, Priority: ${priority}, Image URL: ${confession.imagekit_url}`);
+  try {
+    const url = `${SUPABASE_URL}/rest/v1/${TABLE_NAME}?accept=eq.✓&is_posted=is.null&imagekit_url=not.is.null&limit=1`;
+    const response = await axios.get(url, {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'count=exact'
+      }
+    });
+    
+    if (response.status !== 200) {
+      console.log(`Error counting confessions: ${response.status} - ${response.data}`);
+      return 0;
     }
+    
+    // Get the count from the Content-Range header
+    const contentRange = response.headers['content-range'];
+    if (contentRange) {
+      // Content-Range format: "0-0/1234" where 1234 is the total count
+      const totalCount = contentRange.split('/').pop();
+      const count = parseInt(totalCount) || 0;
+      console.log(`Total confessions ready to be posted for ${TABLE_NAME}: ${count}`);
+      return count;
+    } else {
+      // Fallback: count the returned items (should be 1 or 0)
+      const count = response.data ? response.data.length : 0;
+      console.log(`Total confessions ready to be posted for ${TABLE_NAME}: ${count} (fallback)`);
+      return count;
+    }
+  } catch (e) {
+    console.log(`Error in countReadyConfessionsFC_Supabase: ${e}`);
+    return 0;
   }
-  console.log(`Total confessions ready to be posted for ${TABLE_NAME}: ${readyCount}`);
-  return readyCount;
 }
 
 
